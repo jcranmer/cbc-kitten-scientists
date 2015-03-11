@@ -359,11 +359,27 @@ Builds.prototype = {
             var crafts = this.crafts;
             var prices = this.getPrices(name);
 
+            var producable = true;
             for (i in prices) {
                 var price = prices[i];
 
                 if (crafts.getValue(price.name) < price.val) {
                     buildable = false;
+                    if (crafts.getProducable(price.name) < price.val) {
+                        producable = false;
+                    }
+                }
+            }
+
+            if (!buildable && producable) {
+                buildable = true;
+                for (i in prices) {
+                    price = prices[i];
+                    crafts.deepCraft(price.name, price.val);
+                    if (crafts.getValue(price.name) < price.val) {
+                        // Oops...
+                        buildable = false;
+                    }
                 }
             }
         }
@@ -397,6 +413,29 @@ Crafts.prototype = {
         amount = (amount * (game.bld.getEffect(ratio) + 1)).toFixed(2);
 
         message('Auto Craft: +' + amount + ' ' + name);
+    },
+    deepCraft: function (name, amount) {
+        if (name === undefined || amount < 1) return;
+        if (this.getValue(name) >= amount) return;
+        if (this.getProducable(name) < amount) return;
+
+        var resData = this.getResource(name);
+        if (!resData.craftable)
+            return this.craft(name, amount);
+
+        // We already have this much...
+        amount -= resData.value;
+        // ... and we'll produce this much per click.
+        amount = Math.ceil(amount / game.getResCraftRatio(name));
+
+        var craftData = game.workshop.getCraft(name);
+        for (var i = 0; i < craftData.prices.length; i++) {
+            var depName = craftData.prices[i].name;
+            this.deepCraft(craftData.prices[i].name,
+              craftData.prices[i].val * amount);
+        }
+
+        this.craft(name, amount);
     },
     isCraftable: function (name, amount) {
         var craftable = false;
@@ -447,6 +486,22 @@ Crafts.prototype = {
                 value += depletion;
         }
         return value;
+    },
+    getProducable: function (name) {
+        var resData = this.getResource(name);
+        if (!resData.craftable || name === 'wood')
+            return resData.value;
+        var craftData = game.workshop.getCraft(name);
+        if (!craftData.unlocked)
+            return 0;
+        var limit = 1 << 30;
+        for (var i = 0; i < craftData.prices.length; i++) {
+            var threshold = Math.floor(
+                this.getProducable(craftData.prices[i].name) /
+                craftData.prices[i].val);
+            limit = Math.min(threshold, limit);
+        }
+        return limit * game.getResCraftRatio(name) + resData.value;
     }
 };
 
