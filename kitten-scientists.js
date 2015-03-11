@@ -130,9 +130,12 @@ var options = {
             {build: 'academy', require: 'wood'},
             {build: 'mine', require: 'wood'},
             {build: 'barn', require: 'wood'},
-            {build: 'aqueduct', require: 'minerals'},
             {build: 'lumberMill', require: 'minerals'},
             {build: 'workshop', require: 'minerals'},
+            {build: 'amphitheatre', require: 'minerals'},
+            {build: 'aqueduct', require: 'minerals'},
+            {build: 'temple', require: 'gold'},
+            {build: 'tradepost', require: 'gold'},
             {build: 'unicornPasture', require: false}
         ],
         housing: true,
