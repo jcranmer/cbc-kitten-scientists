@@ -8,7 +8,6 @@ var container = $('#game');
 var column = $('.column');
 
 container.css({
-    fontFamily: 'Courier New',
     fontSize: '12px',
     minWidth: '1300px',
     top: '32px'
@@ -59,7 +58,6 @@ addRule('#resContainer .maxRes {'
 
 addRule('#game .btn {'
 + 'border-radius: 0px;'
-+ 'font-family: "Courier New";'
 + 'font-size: "10px";'
 + 'margin: 0 0 5px 0;'
 + '}');
@@ -128,14 +126,19 @@ var options = {
             {build: 'pasture', require: 'catnip'},
             {build: 'library', require: 'wood'},
             {build: 'academy', require: 'wood'},
+            {build: 'observatory', require: 'wood'},
             {build: 'mine', require: 'wood'},
             {build: 'barn', require: 'wood'},
+            {build: 'oilWell', require: 'coal'},
             {build: 'lumberMill', require: 'minerals'},
             {build: 'workshop', require: 'minerals'},
             {build: 'amphitheatre', require: 'minerals'},
             {build: 'aqueduct', require: 'minerals'},
+            {build: 'smelter', require: 'minerals'},
             {build: 'temple', require: 'gold'},
             {build: 'tradepost', require: 'gold'},
+            {build: 'harbor', require: 'iron'},
+            {build: 'ziggurat', require: 'minerals'},
             {build: 'unicornPasture', require: false}
         ],
         housing: true,
@@ -174,8 +177,8 @@ var options = {
     },
     stock: {
         compedium: 500,
-        manuscript: 500,
-        parchment: 500
+        manuscript: 750,
+        parchment: 1000
     }
 };
 
