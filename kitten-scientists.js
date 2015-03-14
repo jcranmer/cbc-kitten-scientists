@@ -18,6 +18,7 @@ var options = {
             {name: 'library',      require: 'wood',     limit: 0.75},
             {name: 'academy',      require: 'wood',     limit: 0.75},
             {name: 'observatory',  require: 'wood',     limit: 0.75},
+            {name: 'biolab',       require: 'coal',     limit: 0.75},
             // 2. Craft bonuses
             {name: 'workshop',     require: 'minerals', limit: 0.75},
             // 3. Raw production
@@ -34,7 +35,7 @@ var options = {
             // 5. Storage
             {name: 'harbor',       require: 'iron',     limit: 0.90},
             {name: 'barn',         require: 'wood',     limit: 0.90},
-            {name: 'warehouse',    require: 'minerals', limit: 0.94},
+            {name: 'warehouse',    require: 'minerals', limit: 0.90},
             // 6. Housing
             {name: 'hut',          require: 'wood',     limit: 0.85},
             {name: 'logHouse',     require: 'minerals', limit: 0.85},
@@ -47,8 +48,7 @@ var options = {
             {name: 'tradepost',    require: 'gold',     limit: 0.99},
             {name: 'ziggurat',     require: 'minerals', limit: 0.94},
             {name: 'unicornPasture', require: false}
-            // Not present: accelerator, biolab, chapel, chronosphere,
-            // factory, mint, reactor
+            // Not present: accelerator, chapel, chronosphere, factory, mint, reactor
         ],
         craft: [
             {name: 'wood', require: 'catnip'},
@@ -59,7 +59,8 @@ var options = {
         ],
         luxury: [
             {name: 'manuscript', require: 'culture'},
-            {name: 'compendium', require: 'science'}
+            {name: 'compendium', require: 'science'},
+            {name: 'blueprint', require: 'science'}
         ]
     },
     limit: {
@@ -72,14 +73,17 @@ var options = {
     stock: {
         compendium: 500,
         manuscript: 1000,
-        parchment: 3000
+        parchment: 5000,
+        furs: 1000, // Save some for happiness bonus!
+        ship: 100
     },
     toggle: {
         building: true,
         crafting: true,
         hunting: true,
         luxury: true,
-        praising: true
+        praising: true,
+        stocking: true
     }
 };
 
@@ -144,6 +148,7 @@ Engine.prototype = {
         if (options.toggle.hunting) this.sendHunters();
         if (options.toggle.crafting) this.startCrafts('craft', options.auto.craft);
         if (options.toggle.building) this.startBuilds('build', options.auto.build);
+        if (options.toggle.stocking) this.startStock();
     },
     observeGameLog: function () {
         $('#gameLog').find('input').click();
@@ -186,7 +191,7 @@ Engine.prototype = {
         var globalLimit = options.limit[type];
         buildManager.triggerLateBuild();
 
-        for (i in builds) {
+        for (var i in builds) {
             var build = builds[i];
             var require = !build.require ? !build.require : craftManager.getResource(build.require);
             var limit = build.limit || globalLimit;
@@ -200,13 +205,44 @@ Engine.prototype = {
         var limit = options.limit[type];
         var manager = this.craftManager;
 
-        for (i in crafts) {
+        for (var i in crafts) {
             var craft = crafts[i];
             var require = manager.getResource(craft.require);
 
             if (limit <= require.value / require.maxValue) {
                 manager.craft(craft.name, manager.getLowestCraftAmount(craft.name));
             }
+        }
+    },
+    startStock: function () {
+        var manager = this.craftManager;
+        var usage = {};
+        game.resPool.resources.forEach(function (r) {
+            var name = r.title || r.name;
+            if (r.maxValue && !(name in options.stock))
+                usage[r.name] = (1 - options.amount.consume) * r.value;
+        });
+
+        for (var i in options.stock) {
+            if (!manager.isCraftable(i))
+                continue;
+            var res = manager.getResource(i);
+            // Only build when we need this resource.
+            if (res.value >= options.stock[i])
+                continue;
+            var amount = manager.getLowestCraftAmount(i);
+            // If we can't craft, see if we can craft after crafting some
+            // dependent resources.
+            if (amount < 1) {
+                amount = manager.getCraftRatio(i);
+                if (!manager.getCraftUsage(i, res.value + amount,
+                        Object.create(usage)))
+                    continue;
+            } else {
+                // Rounding issues, I think.
+                amount *= 0.99 * manager.getCraftRatio(i);
+            }
+            manager.deepCraft(i, res.value + amount);
         }
     }
 };
@@ -224,7 +260,7 @@ BuildManager.prototype = {
     triggerLateBuild: function () {
       var arr = this.lateBuilds;
       this.lateBuilds = [];
-      for (i in arr)
+      for (var i in arr)
         this.build(arr[i]);
     },
     build: function (name) {
@@ -233,7 +269,7 @@ BuildManager.prototype = {
         // Craft the resources to build this.
         var manager = this.craftManager;
         var prices = this.getPrices(name);
-        for (i in prices) {
+        for (var i in prices) {
             var price = prices[i];
             manager.deepCraft(price.name, price.val);
         }
@@ -258,7 +294,7 @@ BuildManager.prototype = {
             var prices = this.getPrices(name);
             var usage = {};
 
-            for (i in prices) {
+            for (var i in prices) {
                 var price = prices[i];
                 if (!manager.getCraftUsage(price.name, price.val, usage)) {
                     return false;
@@ -305,7 +341,7 @@ CraftManager.prototype = {
         if (craft.unlocked) {
             result = true;
 
-            for (i in craft.prices) {
+            for (var i in craft.prices) {
                 var price = craft.prices[i];
                 var value = this.getValueAvailable(price.name);
 
@@ -323,6 +359,9 @@ CraftManager.prototype = {
 
         return game.workshop.getCraft(name);
     },
+    getCraftRatio: function (name) {
+        return 1 + game.getResCraftRatio(this.getCraft(name).name);
+    },
     isCraftable: function (name) {
         var res = this.getResource(name);
         return res.craftable && this.getCraft(name).unlocked;
@@ -332,12 +371,12 @@ CraftManager.prototype = {
         var consume = options.amount.consume;
         var materials = this.getMaterials(name);
 
-        for (i in materials) {
+        for (var i in materials) {
             // If there is a desired stock level (accounted for in
             // getValueAvailable), don't go below that. If not, don't go below
             // the consume ratio.
             var usable = this.getValueAvailable(i);
-            if (!(i in options.stock))
+            if (this.getResource(i).maxValue && !(i in options.stock))
               usable = usable * consume;
             var total = usable / materials[i];
 
@@ -350,7 +389,7 @@ CraftManager.prototype = {
         var materials = {};
         var prices = this.getCraft(name).prices;
 
-        for (i in prices) {
+        for (var i in prices) {
             var price = prices[i];
 
             materials[price.name] = price.val;
@@ -385,7 +424,7 @@ CraftManager.prototype = {
     getCraftUsage: function (name, desiredAmount, accounted) {
         name = this.getResource(name).name; // Normalize the name.
         var unusable = accounted[name] || 0;
-        var value = this.getValue(name);
+        var value = this.getValueAvailable(name);
 
         value -= unusable;
 
@@ -403,10 +442,10 @@ CraftManager.prototype = {
         accounted[name] = value + unusable;
 
         var amountToCraft = Math.ceil((desiredAmount - value) /
-            game.getResCraftRatio(name));
+            this.getCraftRatio(name));
 
         var materials = this.getMaterials(name);
-        for (i in materials) {
+        for (var i in materials) {
             var usable = this.getCraftUsage(i,
                 amountToCraft * materials[i], accounted);
             if (!usable)
@@ -418,15 +457,14 @@ CraftManager.prototype = {
     deepCraft: function (name, desiredAmount) {
         var value = this.getValue(name);
 
-        if (desiredAmount < value) return
-        if (!this.isCraftable(name))
-            return this.craft(name, desiredAmount - value);
+        if (desiredAmount < value) return;
+        if (!this.isCraftable(name)) return; // This shouldn't happen.
 
-        var ratio = game.getResCraftRatio(this.getCraft(name).name);
+        var ratio = this.getCraftRatio(name);
         var amountToCraft = Math.ceil((desiredAmount - value) / ratio);
 
         var materials = this.getMaterials(name);
-        for (i in materials) {
+        for (var i in materials) {
             this.deepCraft(i, amountToCraft * materials[i]);
         }
 
@@ -555,6 +593,7 @@ optionsListElement.append(getToggle('building', 'Building'));
 optionsListElement.append(getToggle('praising', 'Faith'));
 optionsListElement.append(getToggle('hunting', 'Hunting'));
 optionsListElement.append(getToggle('luxury', 'Luxury'));
+optionsListElement.append(getToggle('stocking', 'Stocking'));
 
 // add the options above the game log
 right.prepend(optionsElement.append(optionsListElement));
@@ -578,7 +617,7 @@ toggleEngine.trigger('change');
 // Add toggles for options
 // =======================
 
-var autoOptions = ['building', 'crafting', 'hunting', 'luxury', 'praising'];
+var autoOptions = ['building', 'crafting', 'hunting', 'luxury', 'praising', 'stocking'];
 
 var ucfirst = function (string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
