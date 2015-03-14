@@ -16,7 +16,7 @@ var options = {
             // Priorities:
             // 1. Max science
             {name: 'library',      require: 'wood',     limit: 0.75},
-            {name: 'academy',      require: 'wood',     limit: 0.75},
+            {name: 'academy',      require: 'science',  limit: 0.75},
             {name: 'observatory',  require: 'wood',     limit: 0.75},
             {name: 'biolab',       require: 'coal',     limit: 0.75},
             // 2. Craft bonuses
@@ -325,12 +325,12 @@ CraftManager.prototype = {
         if (!this.canCraft(name, amount)) return;
 
         var craft = this.getCraft(name);
-        var ratio = ('wood' === name) ? 'refineRatio' : 'craftRatio';
+        var ratio = this.getCraftRatio(name);
 
         game.craft(craft.name, amount);
 
         // determine actual amount after crafting upgrades
-        amount = (amount * (game.bld.getEffect(ratio) + 1)).toFixed(2);
+        amount = (amount * ratio).toFixed(2);
 
         message('Kittens Craft: +' + amount + ' ' + name);
     },
