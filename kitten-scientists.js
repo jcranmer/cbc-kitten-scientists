@@ -18,7 +18,7 @@ var options = {
             {name: 'library',      require: 'wood',     limit: 0.75},
             {name: 'academy',      require: 'science',  limit: 0.75},
             {name: 'observatory',  require: 'wood',     limit: 0.75},
-            {name: 'biolab',       require: 'coal',     limit: 0.75},
+            {name: 'biolab',       require: 'titanium', limit: 0.75},
             // 2. Craft bonuses
             {name: 'workshop',     require: 'minerals', limit: 0.75},
             // 3. Raw production
@@ -241,6 +241,7 @@ Engine.prototype = {
             } else {
                 // Rounding issues, I think.
                 amount *= 0.99 * manager.getCraftRatio(i);
+                amount = Math.min(amount, options.stock[i] - res.value);
             }
             manager.deepCraft(i, res.value + amount);
         }
@@ -455,7 +456,7 @@ CraftManager.prototype = {
         return true;
     },
     deepCraft: function (name, desiredAmount) {
-        var value = this.getValue(name);
+        var value = this.getValueAvailable(name);
 
         if (desiredAmount < value) return;
         if (!this.isCraftable(name)) return; // This shouldn't happen.
