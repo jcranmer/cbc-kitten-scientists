@@ -9,7 +9,7 @@ var options = {
     interval: 3000,
     color: '#aa50fe', // dark purple
     amount: {
-        consume: 0.5
+        consume: 0.15
     },
     auto: {
         build: [
@@ -29,7 +29,7 @@ var options = {
             // 4. Conversion (the require keeps them from consuming too much)
             {name: 'smelter',      require: 'minerals', limit: 0.75},
             {name: 'magneto',      require: 'oil',      limit: 0.75},
-            {name: 'calciner',     require: 'oil',      limit: 0.95},
+            {name: 'calciner',     require: 'oil',      limit: 0.94},
             {name: 'steamworks',   require: 'coal',     limit: 0.75},
             // 5. Storage
             {name: 'harbor',       require: 'iron',     limit: 0.90},
@@ -333,7 +333,13 @@ CraftManager.prototype = {
         var materials = this.getMaterials(name);
 
         for (i in materials) {
-            var total = this.getValueAvailable(i) * consume / materials[i];
+            // If there is a desired stock level (accounted for in
+            // getValueAvailable), don't go below that. If not, don't go below
+            // the consume ratio.
+            var usable = this.getValueAvailable(i);
+            if (!(i in options.stock))
+              usable = usable * consume;
+            var total = usable / materials[i];
 
             amount = (0 === amount || total < amount) ? total : amount;
         }
@@ -363,7 +369,7 @@ CraftManager.prototype = {
     },
     getValueAvailable: function (name) {
         var value = this.getValue(name);
-        var stock = options.stock[name] || 0;
+        var stock = options.stock[name === 'compedium' ? 'compendium' : name] || 0;
 
         if ('catnip' === name) {
             var resPerTick = game.getResourcePerTick(name, false, {
@@ -389,6 +395,8 @@ CraftManager.prototype = {
         }
 
         if (!this.isCraftable(name)) {
+            // Add this value for reporting purposes
+            accounted[name] = desiredAmount + unusable;
             return false;
         }
 
