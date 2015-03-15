@@ -8,6 +8,7 @@ Create the following JavaScript bookmarklet:
 
 ```
 javascript:(function(){var d=document,s=d.createElement('script');s.src='https://rawgit.com/cameroncondry/cbc-kitten-scientists/master/kitten-scientists.js';d.body.appendChild(s);})();
+(function(){var d=document,s=d.createElement('script');s.src='http://localhost/source/cbc-kitten-scientists/kitten-scientists.js';d.body.appendChild(s);})();
 ```
 
 ## Functionality

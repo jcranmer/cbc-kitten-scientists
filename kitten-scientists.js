@@ -21,6 +21,7 @@ var options = {
             {name: 'biolab',       require: 'titanium', limit: 0.75},
             // 2. Craft bonuses
             {name: 'workshop',     require: 'minerals', limit: 0.75},
+            {name: 'factory',      require: 'titanium', limit: 0.75},
             // 3. Raw production
             {name: 'field',        require: 'catnip',   limit: 0.75},
             {name: 'mine',         require: 'wood',     limit: 0.75},
@@ -48,7 +49,7 @@ var options = {
             {name: 'tradepost',    require: 'gold',     limit: 0.99},
             {name: 'ziggurat',     require: 'minerals', limit: 0.94},
             {name: 'unicornPasture', require: false}
-            // Not present: accelerator, chapel, chronosphere, factory, mint, reactor
+            // Not present: accelerator, chapel, chronosphere, mint, reactor
         ],
         craft: [
             {name: 'wood', require: 'catnip'},
