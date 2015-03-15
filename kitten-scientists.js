@@ -222,14 +222,17 @@ Engine.prototype = {
             if (r.maxValue && !(name in options.stock))
                 usage[r.name] = (1 - options.amount.consume) * r.value;
         });
+        var savedStock = options.stock;
 
         for (var i in options.stock) {
+            options.stock = Object.create(savedStock);
             if (!manager.isCraftable(i))
                 continue;
             var res = manager.getResource(i);
             // Only build when we need this resource.
             if (res.value >= options.stock[i])
                 continue;
+            options.stock[i] = 0;
             var amount = manager.getLowestCraftAmount(i);
             // If we can't craft, see if we can craft after crafting some
             // dependent resources.
@@ -243,11 +246,9 @@ Engine.prototype = {
                 amount *= 0.99 * manager.getCraftRatio(i);
                 amount = Math.min(amount, options.stock[i] - res.value);
             }
-            var saveStock = options.stock[i];
-            options.stock[i] = 0;
             manager.deepCraft(i, res.value + amount);
-            options.stock[i] = saveStock;
         }
+        options.stock = savedStock;
     }
 };
 
