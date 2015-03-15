@@ -243,7 +243,10 @@ Engine.prototype = {
                 amount *= 0.99 * manager.getCraftRatio(i);
                 amount = Math.min(amount, options.stock[i] - res.value);
             }
+            var saveStock = options.stock[i];
+            options.stock[i] = 0;
             manager.deepCraft(i, res.value + amount);
+            options.stock[i] = saveStock;
         }
     }
 };
