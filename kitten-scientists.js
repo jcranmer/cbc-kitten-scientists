@@ -244,7 +244,7 @@ Engine.prototype = {
             } else {
                 // Rounding issues, I think.
                 amount *= 0.99 * manager.getCraftRatio(i);
-                amount = Math.min(amount, options.stock[i] - res.value);
+                amount = Math.min(amount, savedStock[i] - res.value);
             }
             manager.deepCraft(i, res.value + amount);
         }
