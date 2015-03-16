@@ -76,7 +76,9 @@ var options = {
         manuscript: 1000,
         parchment: 5000,
         furs: 1000, // Save some for happiness bonus!
-        ship: 100
+        ship: 100,
+        culture: 0, // Always use all the culture you can
+        science: 0  // Ditto for science
     },
     toggle: {
         building: true,
@@ -244,6 +246,7 @@ Engine.prototype = {
                     continue;
             } else {
                 // Rounding issues, I think.
+                amount = Math.floor(amount);
                 amount *= 0.99 * manager.getCraftRatio(i);
                 amount = Math.min(amount, savedStock[i] - res.value);
             }
@@ -366,7 +369,7 @@ CraftManager.prototype = {
         return game.workshop.getCraft(name);
     },
     getCraftRatio: function (name) {
-        return 1 + game.getResCraftRatio(this.getCraft(name).name);
+        return 1 + game.getResCraftRatio(this.getResource(name));
     },
     isCraftable: function (name) {
         var res = this.getResource(name);
